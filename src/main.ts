@@ -9,6 +9,7 @@ function genLabel(): string {
 }
 
 async function startRunner(token: string, params: IEC2Params): Promise<string> {
+  core.info('Mode Start: start runner')
   const ghc = new gitHubClient(token, params.label!, github.context)
   params.githubRegistrationToken = await ghc.getRegistrationToken()
   const aws = new awsClient(params)
@@ -23,6 +24,7 @@ async function stopRunner(
   label: string,
   ec2InstanceId: string
 ): Promise<void> {
+  core.info('Mode Stop: stop runner')
   const params: IEC2Params = {
     instanceId: ec2InstanceId
   }
@@ -48,13 +50,14 @@ async function run(): Promise<void> {
     //core.debug(`Waiting ${ms} milliseconds ...`) // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
 
     if (mode === 'start') {
+      core.info('Mode Start:')
       const params: IEC2Params = {
         ec2ImageId: core.getInput('ec2-image-id'),
         ec2InstanceType: core.getInput('ec2-instance-type'),
         subnetId: core.getInput('subnet-id'),
         securityGroupId: core.getInput('security-group-id'),
         iamRoleName: core.getInput('iam-role-name'),
-        tags: JSON.parse(core.getInput('aws-resource-tags')),
+        tags: core.getInput('aws-resource-tags'),
         label: genLabel()
       }
 
@@ -74,6 +77,7 @@ async function run(): Promise<void> {
       core.setOutput('ec2-instance-id', ec2InstanceId)
       return
     } else if (mode === 'stop') {
+      core.info('Mode Stop:')
       const label = core.getInput('label')
       const ec2InstanceId = core.getInput('ec2-instance-id')
       if (!label || !ec2InstanceId) {

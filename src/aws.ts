@@ -18,6 +18,7 @@ export class awsClient implements AWSWorker {
   }
 
   async terminateEc2Instance(): Promise<void> {
+    core.info('Treminate EC2 Instance')
     if (this.params.instanceId === undefined) {
       core.error('AWS EC2 instance ID is undefined')
       throw new Error('ec2InstanceId is undefined')
@@ -65,8 +66,11 @@ export class awsClient implements AWSWorker {
       TagSpecifications: getTagSpecification(this.params.tags!)
     }
 
+    core.info('Ec2 params is created')
+
     try {
       const result = await this.ec2.runInstances(Ec2Params).promise()
+      core.info('Ec2 runInstances is started')
       const ec2InstanceId = result.Instances![0].InstanceId
       core.info(`AWS EC2 instance ${ec2InstanceId} is started`)
       if (ec2InstanceId === undefined) {
@@ -81,6 +85,7 @@ export class awsClient implements AWSWorker {
   }
 
   async waitForInstanceRunning(): Promise<void> {
+    core.info('waiting for instance running')
     if (this.params.instanceId === undefined) {
       core.error('AWS EC2 instance ID is undefined')
       throw new Error('ec2InstanceId is undefined')
@@ -113,6 +118,7 @@ function spotRequest(params: type) {
 */
 
 function getTagSpecification(param: string): TagSpecificationList {
+  core.info('generate TagSpecification')
   const tagSpecifications: TagSpecificationList = []
   const tagsJSON = JSON.parse(param)
   if (tagsJSON.length > 0) {

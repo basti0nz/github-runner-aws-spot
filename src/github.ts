@@ -41,6 +41,7 @@ export class gitHubClient implements GitHubWorker {
   }
 
   async getRunner(): Promise<null | any> {
+    core.info('Get Github runner info')
     try {
       const runners = await this.octokit.paginate(
         'GET /repos/{owner}/{repo}/actions/runners',
@@ -54,6 +55,7 @@ export class gitHubClient implements GitHubWorker {
   }
 
   async removeRunner(): Promise<void> {
+    core.info('Remove Github runner')
     const runner = await this.getRunner()
     if (!runner) {
       core.info(
@@ -75,6 +77,7 @@ export class gitHubClient implements GitHubWorker {
   }
 
   async waitForRunnerRegistered(): Promise<void> {
+    core.info('Waiting for registration Github runner')
     const timeoutMinutes = 5
     const retryIntervalSeconds = 10
     const quietPeriodSeconds = 30
