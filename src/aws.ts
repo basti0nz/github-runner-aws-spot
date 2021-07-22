@@ -6,7 +6,7 @@ import {
   TagList,
   Tag
 } from 'aws-sdk/clients/ec2'
-import {AWSWorker, IEC2Params} from './interfaces'
+import { AWSWorker, IEC2Params } from './interfaces'
 
 export class awsClient implements AWSWorker {
   ec2: AWS.EC2
@@ -62,7 +62,7 @@ export class awsClient implements AWSWorker {
       UserData: Buffer.from(userData.join('\n')).toString('base64'),
       SubnetId: this.params.subnetId!,
       SecurityGroupIds: [this.params.securityGroupId!],
-      IamInstanceProfile: {Name: this.params.iamRoleName!},
+      IamInstanceProfile: { Name: this.params.iamRoleName! },
       TagSpecifications: getTagSpecification(this.params.tags!)
     }
 

@@ -1,16 +1,15 @@
 import * as core from '@actions/core'
-import {awsClient} from './aws'
-import {gitHubClient} from './github'
-import * as github from '@actions/github'
-import {IEC2Params} from './interfaces'
+import { awsClient } from './aws'
+import { gitHubClient } from './github'
+import { IEC2Params } from './interfaces'
 
 function genLabel(): string {
   return Math.random().toString(36).substr(2, 5)
 }
 
 async function startRunner(token: string, params: IEC2Params): Promise<string> {
-  core.info('Mode Start: start runner')
-  const ghc = new gitHubClient(token, params.label!, github.context)
+  core.info('Mode Start: start runner with label ${params.label}')
+  const ghc = new gitHubClient(token, params.label!)
   params.githubRegistrationToken = await ghc.getRegistrationToken()
   const aws = new awsClient(params)
   const ec2InstanceId = await aws.startEc2Instance()
@@ -31,7 +30,7 @@ async function stopRunner(
   const aws = new awsClient(params)
   await aws.terminateEc2Instance()
 
-  const ghc = new gitHubClient(token, label, github.context)
+  const ghc = new gitHubClient(token, label)
   await ghc.removeRunner()
 }
 

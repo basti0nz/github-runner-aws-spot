@@ -1,7 +1,7 @@
 import * as github from '@actions/github'
 import * as core from '@actions/core'
 import _ from 'lodash'
-import {GitHubWorker} from './interfaces'
+import { GitHubWorker } from './interfaces'
 
 export class gitHubClient implements GitHubWorker {
   /* eslint-disable  @typescript-eslint/no-explicit-any */
@@ -12,15 +12,15 @@ export class gitHubClient implements GitHubWorker {
   repo: string
   githubContext: object
 
-  constructor(token: string, label: string, context: any) {
+  constructor(token: string, label: string) {
     this.octokit = github.getOctokit(token)
     this.githubToken = token
     this.label = label
-    this.owner = context.repo.owner
-    this.repo = context.repo.repo
+    this.owner = github.context.repo.owner
+    this.repo = github.context.repo.repo
     this.githubContext = {
-      owner: context.repo.owner,
-      repo: context.repo.repo
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo
     }
 
     core.debug(`github: ${this.owner} / ${this.repo}`) // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
@@ -41,13 +41,15 @@ export class gitHubClient implements GitHubWorker {
   }
 
   async getRunner(): Promise<null | any> {
-    core.info('Get Github runner info')
+    core.info(
+      `Get Github runner info  with label  ${this.label}  from ${this.owner}/${this.repo}`
+    )
     try {
       const runners = await this.octokit.paginate(
         'GET /repos/{owner}/{repo}/actions/runners',
         this.githubContext
       )
-      const foundRunners = _.filter(runners, {labels: [{name: this.label}]})
+      const foundRunners = _.filter(runners, { labels: [{ name: this.label }] })
       return foundRunners.length > 0 ? foundRunners[0] : null
     } catch (error) {
       return null
@@ -55,7 +57,7 @@ export class gitHubClient implements GitHubWorker {
   }
 
   async removeRunner(): Promise<void> {
-    core.info('Remove Github runner')
+    core.info('Remove Github runner ')
     const runner = await this.getRunner()
     if (!runner) {
       core.info(
@@ -66,7 +68,7 @@ export class gitHubClient implements GitHubWorker {
     try {
       await this.octokit.request(
         'DELETE /repos/{owner}/{repo}/actions/runners/{runner_id}',
-        _.merge(this.githubContext, {runner_id: runner.id})
+        _.merge(this.githubContext, { runner_id: runner.id })
       )
       core.info(`GitHub self-hosted runner ${runner.name} is removed`)
       return
