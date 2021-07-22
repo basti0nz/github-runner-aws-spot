@@ -5,32 +5,26 @@ import { GitHubWorker } from './interfaces'
 
 export class gitHubClient implements GitHubWorker {
   /* eslint-disable  @typescript-eslint/no-explicit-any */
-  octokit: any
   label: string
-  githubToken: string
+  token: string
   owner: string
   repo: string
-  githubContext: object
 
   constructor(token: string, label: string) {
-    this.octokit = github.getOctokit(token)
-    this.githubToken = token
+    this.token = token
     this.label = label
     this.owner = github.context.repo.owner
     this.repo = github.context.repo.repo
-    this.githubContext = {
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo
-    }
 
     core.debug(`github: ${this.owner} / ${this.repo}`) // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
   }
 
   async getRegistrationToken(): Promise<any> {
+    const octokit = github.getOctokit(this.token)
     try {
-      const response = await this.octokit.request(
+      const response = await octokit.request(
         'POST /repos/{owner}/{repo}/actions/runners/registration-token',
-        this.githubContext
+        { owner: this.owner, repo: this.repo }
       )
       core.info('GitHub Registration Token is received')
       return response.data.token
@@ -44,10 +38,11 @@ export class gitHubClient implements GitHubWorker {
     core.info(
       `Get Github runner info  with label  ${this.label}  from ${this.owner}/${this.repo}`
     )
+    const octokit = github.getOctokit(this.token)
     try {
-      const runners = await this.octokit.paginate(
+      const runners = await octokit.paginate(
         'GET /repos/{owner}/{repo}/actions/runners',
-        this.githubContext
+        { owner: this.owner, repo: this.repo }
       )
       const foundRunners = _.filter(runners, { labels: [{ name: this.label }] })
       return foundRunners.length > 0 ? foundRunners[0] : null
@@ -65,10 +60,14 @@ export class gitHubClient implements GitHubWorker {
       )
       return
     }
+    const octokit = github.getOctokit(this.token)
     try {
-      await this.octokit.request(
+      await octokit.request(
         'DELETE /repos/{owner}/{repo}/actions/runners/{runner_id}',
-        _.merge(this.githubContext, { runner_id: runner.id })
+        _.merge(
+          { owner: this.owner, repo: this.repo },
+          { runner_id: runner.id }
+        )
       )
       core.info(`GitHub self-hosted runner ${runner.name} is removed`)
       return

@@ -1,5 +1,6 @@
 import AWS from 'aws-sdk'
 import * as core from '@actions/core'
+import * as github from '@actions/github'
 import {
   TagSpecificationList,
   TagSpecification,
@@ -11,10 +12,16 @@ import { AWSWorker, IEC2Params } from './interfaces'
 export class awsClient implements AWSWorker {
   ec2: AWS.EC2
   params: IEC2Params
+  owner: string
+  repo: string
+  ghToken?: string
 
-  constructor(params: IEC2Params) {
+  constructor(params: IEC2Params, token?: string) {
     this.ec2 = new AWS.EC2()
     this.params = params
+    this.owner = github.context.repo.owner
+    this.repo = github.context.repo.repo
+    this.ghToken = token
   }
 
   async terminateEc2Instance(): Promise<void> {
@@ -42,6 +49,7 @@ export class awsClient implements AWSWorker {
     //TODO: add check input data
     //TODO start spot instance
 
+    core.info(`Userdata: with label ${this.params.label}`)
     const userData = [
       '#!/bin/bash',
       'mkdir actions-runner && cd actions-runner',
@@ -50,7 +58,7 @@ export class awsClient implements AWSWorker {
       'tar xzf ./actions-runner-linux-${RUNNER_ARCH}-2.278.0.tar.gz',
       'export RUNNER_ALLOW_RUNASROOT=1',
       'export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1',
-      `./config.sh --url https://github.com/${this.params.githubOwner}/${this.params.githubRepo} --token ${this.params.githubRegistrationToken} --labels ${this.params.label}`,
+      `./config.sh --url https://github.com/${this.owner}/${this.repo} --token ${this.ghToken} --labels ${this.params.label}`,
       './run.sh'
     ]
 
@@ -65,8 +73,6 @@ export class awsClient implements AWSWorker {
       IamInstanceProfile: { Name: this.params.iamRoleName! },
       TagSpecifications: getTagSpecification(this.params.tags!)
     }
-
-    core.info('Ec2 params is created')
 
     try {
       const result = await this.ec2.runInstances(Ec2Params).promise()

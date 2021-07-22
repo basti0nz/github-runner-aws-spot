@@ -10,8 +10,8 @@ function genLabel(): string {
 async function startRunner(token: string, params: IEC2Params): Promise<string> {
   core.info('Mode Start: start runner with label ${params.label}')
   const ghc = new gitHubClient(token, params.label!)
-  params.githubRegistrationToken = await ghc.getRegistrationToken()
-  const aws = new awsClient(params)
+  const ghToken = await ghc.getRegistrationToken()
+  const aws = new awsClient(params, ghToken)
   const ec2InstanceId = await aws.startEc2Instance()
   await aws.waitForInstanceRunning(ec2InstanceId)
   await ghc.waitForRunnerRegistered()
