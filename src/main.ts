@@ -12,6 +12,9 @@ async function startRunner(token: string, params: IEC2Params): Promise<string> {
   const ghc = new gitHubClient(token, params.label!)
   const ghToken = await ghc.getRegistrationToken()
   const aws = new awsClient(params, ghToken)
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+  const spotPrice = aws.getSpotPrice()
+  core.info('SpotPrice: ${spotPrice}')
   const ec2InstanceId = await aws.startEc2Instance()
   await aws.waitForInstanceRunning(ec2InstanceId)
   await ghc.waitForRunnerRegistered()

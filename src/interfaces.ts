@@ -14,6 +14,7 @@ export interface IEC2Params {
 
 export interface AWSWorker {
   startEc2Instance(): Promise<string>
+  getSpotPrice(): Promise<string>
   /* eslint-disable  @typescript-eslint/no-unused-vars */
   waitForInstanceRunning(id: string): void
   terminateEc2Instance(): void

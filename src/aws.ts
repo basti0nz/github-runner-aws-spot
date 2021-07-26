@@ -45,6 +45,34 @@ export class awsClient implements AWSWorker {
     }
   }
 
+  async getSpotPrice(): Promise<string> {
+    const end = new Date(Date.now())
+    const start = new Date(end.getTime() - 30 * 60 * 1000)
+    const paramsSpot = {
+      InstanceTypes: [this.params.ec2InstanceType!],
+      ProductDescriptions: ['Linux/UNIX (Amazon VPC)'],
+      StartTime: start,
+      EndTime: end
+    }
+    try {
+      const result = await this.ec2
+        .describeSpotPriceHistory(paramsSpot)
+        .promise()
+      let maxPrice = 0
+
+      for (const item of result.SpotPriceHistory!) {
+        const price: number = +item.SpotPrice!
+        if (price > maxPrice) {
+          maxPrice = price
+        }
+      }
+      return `${maxPrice}`
+    } catch (error) {
+      core.error(`AWS EC2 Spot instance price history has error`)
+      throw error
+    }
+  }
+
   async startEc2Instance(): Promise<string> {
     //TODO: add check input data
     //TODO start spot instance
