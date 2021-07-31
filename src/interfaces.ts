@@ -10,6 +10,9 @@ export interface IEC2Params {
   githubRepo?: string
   label?: string
   githubRegistrationToken?: string
+  runnerType?: string
+  runnerCount?: number
+  region?: string
 }
 
 export interface AWSWorker {

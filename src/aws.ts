@@ -45,6 +45,10 @@ export class awsClient implements AWSWorker {
     }
   }
 
+  async getOnDemandPrice(): Promise<string> {
+    return '0.9'
+  }
+
   async getSpotPrice(): Promise<string> {
     const end = new Date(Date.now())
     const start = new Date(end.getTime() - 30 * 60 * 1000)
@@ -73,10 +77,57 @@ export class awsClient implements AWSWorker {
     }
   }
 
-  async startEc2Instance(): Promise<string> {
-    //TODO: add check input data
-    //TODO start spot instance
+  async startEc2SpotInstance(spotPrice: string): Promise<string> {
+    try {
+      const request: AWS.EC2.RequestSpotInstancesRequest = {
+        SpotPrice: spotPrice,
+        InstanceCount: this.params.runnerCount,
+        Type: "one-time"
+      }
 
+      const userData = [
+        '#!/bin/bash',
+        'mkdir actions-runner && cd actions-runner',
+        'case $(uname -m) in aarch64) ARCH="arm64" ;; amd64|x86_64) ARCH="x64" ;; esac && export RUNNER_ARCH=${ARCH}',
+        'curl -O -L https://github.com/actions/runner/releases/download/v2.278.0/actions-runner-linux-${RUNNER_ARCH}-2.278.0.tar.gz',
+        'tar xzf ./actions-runner-linux-${RUNNER_ARCH}-2.278.0.tar.gz',
+        'export RUNNER_ALLOW_RUNASROOT=1',
+        'export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1',
+        `./config.sh --url https://github.com/${this.owner}/${this.repo} --token ${this.ghToken} --labels ${this.params.label}`,
+        './run.sh'
+      ]
+
+      const Ec2Params = {
+        ImageId: this.params.ec2ImageId!,
+        InstanceType: this.params.ec2InstanceType!,
+        MinCount: 1,
+        MaxCount: 1,
+        UserData: Buffer.from(userData.join('\n')).toString('base64'),
+        SubnetId: this.params.subnetId!,
+        SecurityGroupIds: [this.params.securityGroupId!],
+        IamInstanceProfile: { Name: this.params.iamRoleName! },
+        TagSpecifications: getTagSpecification(this.params.tags!)
+      }
+
+      request.LaunchSpecification = Ec2Params;
+      let ec2InstanceId: string | undefined
+      this.ec2.requestSpotInstances(request, function (error, data) {
+        if (error) {
+          core.error('AWS Spot EC2 instance starting error')
+          throw error
+        }
+        ec2InstanceId = data.SpotInstanceRequests![0].InstanceId
+      })
+      if (ec2InstanceId !== undefined)
+        return ec2InstanceId
+      return ""
+    } catch (error) {
+      core.error('AWS Spot EC2 instance starting error')
+      throw error
+    }
+  }
+
+  async startEc2Instance(): Promise<string> {
     core.info(`Userdata: with label ${this.params.label}`)
     const userData = [
       '#!/bin/bash',

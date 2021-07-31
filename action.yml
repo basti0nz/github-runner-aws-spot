@@ -12,6 +12,20 @@ inputs:
     description: >-
       GitHub Personal Access Token with the 'repo' scope assigned.
     required: true
+  runner-type:
+    description: >-
+      Specify here which do you want to use spot instance:
+        - 'spot' - to start a new runner on spot instance;
+        - 'ondemand' - to start a new runner on demand instance .
+    required: false
+  runner-count:
+    description: >-
+      Specify here how many instances you want.
+    required: false
+  region:
+    description: >-
+      Specify here aws region for runnner. Default: us-east1
+    required: false
   ec2-image-id:
     description: >-
       EC2 Image Id (AMI). The new runner will be launched from this image.

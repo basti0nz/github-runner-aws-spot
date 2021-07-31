@@ -12,9 +12,19 @@ async function startRunner(token: string, params: IEC2Params): Promise<string> {
   const ghc = new gitHubClient(token, params.label!)
   const ghToken = await ghc.getRegistrationToken()
   const aws = new awsClient(params, ghToken)
-  const spotPrice = await aws.getSpotPrice()
-  core.info(`SpotPrice: ${spotPrice}`)
-  const ec2InstanceId = await aws.startEc2Instance()
+  let ec2InstanceId: string
+  if (params.runnerType === 'spot') {
+    const spotPrice = await aws.getSpotPrice()
+    const ondemandPrice = await aws.getOnDemandPrice()
+    core.info(`SpotPrice: ${spotPrice}`)
+    ec2InstanceId =
+      ondemandPrice > spotPrice
+        ? await aws.startEc2SpotInstance(spotPrice)
+        : await aws.startEc2Instance()
+  } else {
+    ec2InstanceId = await aws.startEc2Instance()
+  }
+
   await aws.waitForInstanceRunning(ec2InstanceId)
   await ghc.waitForRunnerRegistered()
   return ec2InstanceId
@@ -48,9 +58,22 @@ async function run(): Promise<void> {
       throw new Error(`The 'github-token' input is not specified`)
     }
 
-    //core.debug(`Waiting ${ms} milliseconds ...`) // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
+    //core.debug(`debug ...`) // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
 
     if (mode === 'start') {
+      let runnerCounter: number = 1
+      if (!isNaN(Number(core.getInput('runner-count')))) {
+        const num = Math.floor(Number(core.getInput('runner-count')))
+        if (num > 0 && num <= 10) {
+          runnerCounter = num
+        }
+      }
+
+      let region = core.getInput('region')
+      if (!region) {
+        region = 'us-east1'
+      }
+
       core.info('Mode Start:')
       const params: IEC2Params = {
         ec2ImageId: core.getInput('ec2-image-id'),
@@ -59,11 +82,15 @@ async function run(): Promise<void> {
         securityGroupId: core.getInput('security-group-id'),
         iamRoleName: core.getInput('iam-role-name'),
         tags: core.getInput('aws-resource-tags'),
-        label: genLabel()
+        label: genLabel(),
+        runnerType: core.getInput('runner-type'),
+        runnerCount: runnerCounter,
+        region: region
       }
 
       if (
         !params.ec2ImageId ||
+        !params.runnerType ||
         !params.ec2InstanceType ||
         !params.subnetId ||
         !params.securityGroupId
