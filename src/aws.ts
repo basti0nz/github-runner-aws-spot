@@ -101,20 +101,14 @@ export class awsClient implements AWSWorker {
         `./config.sh --url https://github.com/${this.owner}/${this.repo} --token ${this.ghToken} --labels ${this.params.label}`,
         './run.sh'
       ]
-
-      const Ec2Params = {
+      request.LaunchSpecification = {
         ImageId: this.params.ec2ImageId!,
         InstanceType: this.params.ec2InstanceType!,
-        MinCount: 1,
-        MaxCount: 1,
         UserData: Buffer.from(userData.join('\n')).toString('base64'),
         SubnetId: this.params.subnetId!,
         SecurityGroupIds: [this.params.securityGroupId!],
-        IamInstanceProfile: { Name: this.params.iamRoleName! },
-        TagSpecifications: getTagSpecification(this.params.tags!)
+        IamInstanceProfile: { Name: this.params.iamRoleName! }
       }
-
-      request.LaunchSpecification = Ec2Params
       let ec2InstanceId: string | undefined
       this.ec2.requestSpotInstances(request, function (error, data) {
         if (error) {
