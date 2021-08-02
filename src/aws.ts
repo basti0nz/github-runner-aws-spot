@@ -51,7 +51,7 @@ export class awsClient implements AWSWorker {
       const instancedb = onDemandPriceDB.get(this.params.ec2InstanceType)
       if (instancedb !== undefined) return instancedb[0].price
     }
-    return '9'
+    return '9.99'
   }
 
   async getSpotPrice(): Promise<string> {
