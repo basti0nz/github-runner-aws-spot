@@ -8,6 +8,7 @@ import {
   Tag
 } from 'aws-sdk/clients/ec2'
 import { AWSWorker, IEC2Params } from './interfaces'
+import { onDemandPriceDB } from './ondemand'
 
 export class awsClient implements AWSWorker {
   ec2: AWS.EC2
@@ -46,7 +47,11 @@ export class awsClient implements AWSWorker {
   }
 
   async getOnDemandPrice(): Promise<string> {
-    return '0.9'
+    if (this.params.ec2InstanceType !== undefined) {
+      const instancedb = onDemandPriceDB.get(this.params.ec2InstanceType)
+      if (instancedb !== undefined) return instancedb[0].price
+    }
+    return '9'
   }
 
   async getSpotPrice(): Promise<string> {
