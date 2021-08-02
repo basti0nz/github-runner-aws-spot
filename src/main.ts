@@ -61,7 +61,7 @@ async function run(): Promise<void> {
     //core.debug(`debug ...`) // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
 
     if (mode === 'start') {
-      let runnerCounter: number = 1
+      let runnerCounter = 1
       if (!isNaN(Number(core.getInput('runner-count')))) {
         const num = Math.floor(Number(core.getInput('runner-count')))
         if (num > 0 && num <= 10) {
@@ -69,9 +69,9 @@ async function run(): Promise<void> {
         }
       }
 
-      let region = core.getInput('region')
-      if (!region) {
-        region = 'us-east1'
+      let awsRegion = core.getInput('region')
+      if (!awsRegion) {
+        awsRegion = 'us-east1'
       }
 
       core.info('Mode Start:')
@@ -85,7 +85,7 @@ async function run(): Promise<void> {
         label: genLabel(),
         runnerType: core.getInput('runner-type'),
         runnerCount: runnerCounter,
-        region: region
+        region: awsRegion
       }
 
       if (

@@ -4,7 +4,7 @@ export interface InstanceSet {
   price: string
 }
 
-export const onDemandPriceDB: Map<string, Array<InstanceSet>> = new Map()
+export const onDemandPriceDB: Map<string, InstanceSet[]> = new Map()
 
 onDemandPriceDB.set('m5.large', [
   { name: 'm5.large', region: 'us-east1', price: '0.002' }

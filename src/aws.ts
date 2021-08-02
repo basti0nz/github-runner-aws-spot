@@ -82,7 +82,7 @@ export class awsClient implements AWSWorker {
       const request: AWS.EC2.RequestSpotInstancesRequest = {
         SpotPrice: spotPrice,
         InstanceCount: this.params.runnerCount,
-        Type: "one-time"
+        Type: 'one-time'
       }
 
       const userData = [
@@ -109,7 +109,7 @@ export class awsClient implements AWSWorker {
         TagSpecifications: getTagSpecification(this.params.tags!)
       }
 
-      request.LaunchSpecification = Ec2Params;
+      request.LaunchSpecification = Ec2Params
       let ec2InstanceId: string | undefined
       this.ec2.requestSpotInstances(request, function (error, data) {
         if (error) {
@@ -118,9 +118,8 @@ export class awsClient implements AWSWorker {
         }
         ec2InstanceId = data.SpotInstanceRequests![0].InstanceId
       })
-      if (ec2InstanceId !== undefined)
-        return ec2InstanceId
-      return ""
+      if (ec2InstanceId !== undefined) return ec2InstanceId
+      return ''
     } catch (error) {
       core.error('AWS Spot EC2 instance starting error')
       throw error
