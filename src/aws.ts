@@ -89,20 +89,10 @@ export class awsClient implements AWSWorker {
         SpotPrice: spotPrice,
         InstanceCount: this.params.runnerCount,
         Type: 'one-time',
-        TagSpecifications: getTagSpecification(this.params.tags!)
+        TagSpecifications: getTagSpecification(this.params.tags!, true)
       }
 
-      const userData = [
-        '#!/bin/bash',
-        'mkdir actions-runner && cd actions-runner',
-        'case $(uname -m) in aarch64) ARCH="arm64" ;; amd64|x86_64) ARCH="x64" ;; esac && export RUNNER_ARCH=${ARCH}',
-        'curl -O -L https://github.com/actions/runner/releases/download/v2.278.0/actions-runner-linux-${RUNNER_ARCH}-2.278.0.tar.gz',
-        'tar xzf ./actions-runner-linux-${RUNNER_ARCH}-2.278.0.tar.gz',
-        'export RUNNER_ALLOW_RUNASROOT=1',
-        'export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1',
-        `./config.sh --url https://github.com/${this.owner}/${this.repo} --token ${this.ghToken} --labels ${this.params.label}`,
-        './run.sh'
-      ]
+      const userData = this.getUserData()
       request.LaunchSpecification = {
         ImageId: this.params.ec2ImageId!,
         InstanceType: this.params.ec2InstanceType!,
@@ -136,18 +126,7 @@ export class awsClient implements AWSWorker {
 
   async startEc2Instance(): Promise<string> {
     core.info(`Userdata: with label ${this.params.label}`)
-    const userData = [
-      '#!/bin/bash',
-      'mkdir actions-runner && cd actions-runner',
-      'case $(uname -m) in aarch64) ARCH="arm64" ;; amd64|x86_64) ARCH="x64" ;; esac && export RUNNER_ARCH=${ARCH}',
-      'curl -O -L https://github.com/actions/runner/releases/download/v2.278.0/actions-runner-linux-${RUNNER_ARCH}-2.278.0.tar.gz',
-      'tar xzf ./actions-runner-linux-${RUNNER_ARCH}-2.278.0.tar.gz',
-      'export RUNNER_ALLOW_RUNASROOT=1',
-      'export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1',
-      `./config.sh --url https://github.com/${this.owner}/${this.repo} --token ${this.ghToken} --labels ${this.params.label}`,
-      './run.sh'
-    ]
-
+    const userData = this.getUserData()
     const Ec2Params = {
       ImageId: this.params.ec2ImageId!,
       InstanceType: this.params.ec2InstanceType!,
@@ -157,7 +136,7 @@ export class awsClient implements AWSWorker {
       SubnetId: this.params.subnetId!,
       SecurityGroupIds: [this.params.securityGroupId!],
       IamInstanceProfile: { Name: this.params.iamRoleName! },
-      TagSpecifications: getTagSpecification(this.params.tags!)
+      TagSpecifications: getTagSpecification(this.params.tags!, false)
     }
 
     try {
@@ -220,6 +199,20 @@ export class awsClient implements AWSWorker {
       throw error
     }
   }
+
+  getUserData(): string[] {
+    return [
+      '#!/bin/bash',
+      'mkdir actions-runner && cd actions-runner',
+      'case $(uname -m) in aarch64) ARCH="arm64" ;; amd64|x86_64) ARCH="x64" ;; esac && export RUNNER_ARCH=${ARCH}',
+      'curl -O -L https://github.com/actions/runner/releases/download/v2.278.0/actions-runner-linux-${RUNNER_ARCH}-2.278.0.tar.gz',
+      'tar xzf ./actions-runner-linux-${RUNNER_ARCH}-2.278.0.tar.gz',
+      'export RUNNER_ALLOW_RUNASROOT=1',
+      'export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1',
+      `./config.sh --url https://github.com/${this.owner}/${this.repo} --token ${this.ghToken} --labels ${this.params.label}`,
+      './run.sh'
+    ]
+  }
 }
 
 /*
@@ -232,7 +225,10 @@ function spotRequest(params: type) {
 }
 */
 
-function getTagSpecification(param: string): TagSpecificationList {
+function getTagSpecification(
+  param: string,
+  spot: boolean
+): TagSpecificationList {
   core.info('generate TagSpecification')
   const tagSpecifications: TagSpecificationList = []
   const tagsJSON = JSON.parse(param)
@@ -245,10 +241,19 @@ function getTagSpecification(param: string): TagSpecificationList {
       }
       tagList.push(tag)
     }
-    const tagS: TagSpecification = {
-      ResourceType: 'instance',
-      Tags: tagList
+    let tagS: TagSpecification
+    if (spot) {
+      tagS = {
+        ResourceType: 'spot-instances-request',
+        Tags: tagList
+      }
+    } else {
+      tagS = {
+        ResourceType: 'instance',
+        Tags: tagList
+      }
     }
+
     tagSpecifications.push(tagS)
   }
   return tagSpecifications
