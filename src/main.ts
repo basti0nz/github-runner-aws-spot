@@ -121,7 +121,7 @@ async function run(): Promise<void> {
       let requestId = core.getInput('ec2-instance-id')
       let spot = false
       if (requestId === 'none') {
-        requestId = core.getInput('c2-spot-request-id')
+        requestId = core.getInput('ec2-spot-request-id')
         spot = true
       }
       if (!label || !requestId) {
