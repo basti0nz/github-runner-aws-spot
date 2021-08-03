@@ -128,6 +128,7 @@ async function run(): Promise<void> {
       } else {
         requestId = ec2InstanceId
       }
+      core.info(`Label: ${label}  RequestID: ${requestId} `)
       if (!label || !requestId) {
         throw new Error(
           `Not all the required inputs are provided for the 'stop' mode`
