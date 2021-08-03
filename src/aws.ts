@@ -5,7 +5,8 @@ import {
   TagSpecificationList,
   TagSpecification,
   TagList,
-  Tag
+  Tag,
+  DescribeSpotInstanceRequestsResult
 } from 'aws-sdk/clients/ec2'
 import { AWSWorker, IEC2Params } from './interfaces'
 import { onDemandPriceDB } from './ondemand'
@@ -109,20 +110,25 @@ export class awsClient implements AWSWorker {
         SecurityGroupIds: [this.params.securityGroupId!],
         IamInstanceProfile: { Name: this.params.iamRoleName! }
       }
-      let SpotInstanceRequestId: string | undefined
+      let spotReq: AWS.EC2.RequestSpotInstancesResult | undefined
       this.ec2.requestSpotInstances(request, function (error, data) {
         if (error) {
           core.error('AWS Spot EC2 instance starting error')
           throw error
         }
-        SpotInstanceRequestId = data.SpotInstanceRequests![0]
-          .SpotInstanceRequestId
+        spotReq = data
       })
-
-      if (SpotInstanceRequestId !== undefined) return SpotInstanceRequestId
-      return ''
+      if (spotReq !== undefined) {
+        this.waitForSpotInstanceRunning(spotReq)
+        const spotInstanceId = spotReq.SpotInstanceRequests![0].InstanceId
+        if (spotInstanceId !== undefined) {
+          return spotInstanceId
+        }
+      }
+      core.error('AWS EC2 spot instance request is undefined')
+      throw new Error('ec2SpotInstanceRequest is undefined')
     } catch (error) {
-      core.error('AWS Spot EC2 instance starting error')
+      core.error('AWS EC2 instance starting error')
       throw error
     }
   }
@@ -163,9 +169,35 @@ export class awsClient implements AWSWorker {
         core.error('AWS EC2 instance starting error')
         throw new Error('ec2InstanceId is undefined')
       }
+      await this.waitForInstanceRunning(ec2InstanceId)
       return String(ec2InstanceId)
     } catch (error) {
       core.error('AWS EC2 instance starting error')
+      throw error
+    }
+  }
+
+  async waitForSpotInstanceRunning(
+    spotResult: AWS.EC2.RequestSpotInstancesResult
+  ): Promise<void> {
+    core.info('waiting for spot instance running')
+    if (spotResult === undefined) {
+      core.error('AWS EC2 spot instance request is undefined')
+      throw new Error('ec2SpotInstanceRequest is undefined')
+    }
+    const params: AWS.EC2.DescribeSpotInstanceRequestsResult = {
+      SpotInstanceRequests: spotResult.SpotInstanceRequests
+    }
+    try {
+      await this.ec2.waitFor('spotInstanceRequestFulfilled', params).promise()
+      core.info(
+        `AWS Spot EC2 instance ${this.params.instanceId} is up and running`
+      )
+      return
+    } catch (error) {
+      core.error(
+        `AWS EC2 Spot instance ${this.params.instanceId} initialization error`
+      )
       throw error
     }
   }
@@ -176,7 +208,6 @@ export class awsClient implements AWSWorker {
       core.error('AWS EC2 instance ID is undefined')
       throw new Error('ec2InstanceId is undefined')
     }
-
     const params = {
       InstanceIds: [id]
     }

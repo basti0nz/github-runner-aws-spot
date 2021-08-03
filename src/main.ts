@@ -25,7 +25,6 @@ async function startRunner(token: string, params: IEC2Params): Promise<string> {
     ec2InstanceId = await aws.startEc2Instance()
   }
 
-  await aws.waitForInstanceRunning(ec2InstanceId)
   await ghc.waitForRunnerRegistered()
   return ec2InstanceId
 }
