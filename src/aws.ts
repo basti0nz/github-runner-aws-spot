@@ -88,7 +88,8 @@ export class awsClient implements AWSWorker {
       const request: AWS.EC2.RequestSpotInstancesRequest = {
         SpotPrice: spotPrice,
         InstanceCount: this.params.runnerCount,
-        Type: 'one-time'
+        Type: 'one-time',
+        TagSpecifications: getTagSpecification(this.params.tags!)
       }
 
       const userData = [
@@ -113,13 +114,13 @@ export class awsClient implements AWSWorker {
       let spotReq: AWS.EC2.RequestSpotInstancesResult | undefined
       this.ec2.requestSpotInstances(request, function (error, data) {
         if (error) {
-          core.error('AWS Spot EC2 instance starting error')
+          core.error(`AWS Spot EC2 instance starting error: ${error}`)
           throw error
         }
         spotReq = data
       })
       if (spotReq !== undefined) {
-        this.waitForSpotInstanceRunning(spotReq)
+        await this.waitForSpotInstanceRunning(spotReq)
         const spotInstanceId = spotReq.SpotInstanceRequests![0].InstanceId
         if (spotInstanceId !== undefined) {
           return spotInstanceId
@@ -190,14 +191,11 @@ export class awsClient implements AWSWorker {
     }
     try {
       await this.ec2.waitFor('spotInstanceRequestFulfilled', params).promise()
-      core.info(
-        `AWS Spot EC2 instance ${this.params.instanceId} is up and running`
-      )
+      const iID = spotResult.SpotInstanceRequests![0].InstanceId
+      core.info(`AWS Spot EC2 instance ${iID} is up and running`)
       return
     } catch (error) {
-      core.error(
-        `AWS EC2 Spot instance ${this.params.instanceId} initialization error`
-      )
+      core.error(`AWS EC2 Spot instance  initialization error`)
       throw error
     }
   }
