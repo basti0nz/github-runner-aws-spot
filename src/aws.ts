@@ -5,8 +5,7 @@ import {
   TagSpecificationList,
   TagSpecification,
   TagList,
-  Tag,
-  DescribeSpotInstanceRequestsResult
+  Tag
 } from 'aws-sdk/clients/ec2'
 import { AWSWorker, IEC2Params } from './interfaces'
 import { onDemandPriceDB } from './ondemand'
@@ -26,6 +25,9 @@ export class awsClient implements AWSWorker {
     this.ghToken = token
   }
 
+  async delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
   async terminateEc2Instance(): Promise<void> {
     core.info('Treminate EC2 Instance')
     if (this.params.instanceId === undefined) {
@@ -104,9 +106,10 @@ export class awsClient implements AWSWorker {
       const spotReq = await this.requestSpot(request)
       if (spotReq !== undefined) {
         await this.waitForSpotInstanceRunning(spotReq)
-        const spotInstanceId = spotReq.SpotInstanceRequests![0].InstanceId
-        if (spotInstanceId !== undefined) {
-          return spotInstanceId
+        const SpotInstanceRequestId =
+          spotReq.SpotInstanceRequests![0].SpotInstanceRequestId
+        if (SpotInstanceRequestId !== undefined) {
+          return SpotInstanceRequestId
         }
       }
       core.error('AWS EC2 spot instance request is undefined')
@@ -139,17 +142,40 @@ export class awsClient implements AWSWorker {
       core.error('AWS EC2 spot instance request is undefined')
       throw new Error('ec2SpotInstanceRequest is undefined')
     }
-    const params: AWS.EC2.DescribeSpotInstanceRequestsResult = {
-      SpotInstanceRequests: spotResult.SpotInstanceRequests
+
+    const SpotInstanceRequestId =
+      spotResult.SpotInstanceRequests![0].SpotInstanceRequestId !== undefined
+        ? spotResult.SpotInstanceRequests![0].SpotInstanceRequestId
+        : ''
+
+    const params = {
+      SpotInstanceRequestIds: [SpotInstanceRequestId]
     }
-    try {
-      await this.ec2.waitFor('spotInstanceRequestFulfilled', params).promise()
-      const iID = spotResult.SpotInstanceRequests![0].InstanceId
-      core.info(`AWS Spot EC2 instance ${iID} is up and running`)
-      return
-    } catch (error) {
-      core.error(`AWS EC2 Spot instance  initialization error`)
-      throw error
+    let exit = false
+    let timeout = 10
+    while (!exit) {
+      this.ec2.describeSpotInstanceRequests(params, function (error, data) {
+        if (error) {
+          core.error(`AWS Spot EC2 instance starting error: ${error}`)
+          throw new Error('ec2SpotInstanceRequest ${error}')
+        }
+        if (data.SpotInstanceRequests![0].State === `active`) {
+          core.info(
+            `spot instance  ${
+              data.SpotInstanceRequests![0].InstanceId
+            } is running `
+          )
+          exit = true
+          return
+        }
+      })
+      await this.delay(15 * 1000)
+      timeout = timeout - 1
+      if (timeout < 0) {
+        exit = true
+        break
+      }
+      core.info(`timeout for waiting spot instance is  ${timeout}`)
     }
   }
 
