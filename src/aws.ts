@@ -127,20 +127,6 @@ export class awsClient implements AWSWorker {
         await this.waitForSpotInstanceRunning(spotReq)
         const SpotInstanceRequestId =
           spotReq.SpotInstanceRequests![0].SpotInstanceRequestId
-        const SpotInstanceID = spotReq.SpotInstanceRequests![0].InstanceId
-        if (SpotInstanceID !== undefined) {
-          const params = {
-            Resources: [SpotInstanceID],
-            Tags: getTags(this.params.tags!)
-          }
-          this.ec2.createTags(params, function (error, data) {
-            if (error) {
-              core.error(`Create Tag error ${error}`)
-              throw new Error(`Create Tag error ${error}`)
-            }
-            core.info(`Success added tags ${data} to ${SpotInstanceID}`)
-          })
-        }
         if (SpotInstanceRequestId !== undefined) {
           return SpotInstanceRequestId
         }
@@ -210,6 +196,9 @@ export class awsClient implements AWSWorker {
       }
       core.info(`timeout for waiting spot instance is  ${timeout * 15} secs`)
     }
+    core.info(
+      `Check spot instance  ${spotResult.SpotInstanceRequests![0].InstanceId}`
+    )
   }
 
   async startEc2Instance(): Promise<string> {
