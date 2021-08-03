@@ -89,6 +89,11 @@ outputs:
     description: >-
       EC2 Instance Id of the created runner.
       The id is used to terminate the EC2 instance when the runner is not needed anymore.
+  ec2-spot-request-id:
+    description: >-
+      EC2 Spot Request Id of the created runner.
+      The id is used to terminate the EC2 Spot Request when the runner is not needed anymore.
+      This input is required if you use the 'stop' mode.
 runs:
   using: "node12"
   main: "dist/index.js"

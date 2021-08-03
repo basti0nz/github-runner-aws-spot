@@ -118,11 +118,15 @@ async function run(): Promise<void> {
     } else if (mode === 'stop') {
       core.info('Mode Stop:')
       const label = core.getInput('label')
-      let requestId = core.getInput('ec2-instance-id')
+      const ec2InstanceId = core.getInput('ec2-instance-id')
+      const spotRequestId = core.getInput('ec2-spot-request-id')
+      let requestId: string
       let spot = false
-      if (requestId === 'none') {
-        requestId = core.getInput('ec2-spot-request-id')
+      if (spotRequestId !== 'none') {
         spot = true
+        requestId = spotRequestId
+      } else {
+        requestId = ec2InstanceId
       }
       if (!label || !requestId) {
         throw new Error(

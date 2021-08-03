@@ -127,6 +127,20 @@ export class awsClient implements AWSWorker {
         await this.waitForSpotInstanceRunning(spotReq)
         const SpotInstanceRequestId =
           spotReq.SpotInstanceRequests![0].SpotInstanceRequestId
+        const SpotInstanceID = spotReq.SpotInstanceRequests![0].InstanceId
+        if (SpotInstanceID !== undefined) {
+          const params = {
+            Resources: [SpotInstanceID],
+            Tags: getTags(this.params.tags!)
+          }
+          this.ec2.createTags(params, function (error, data) {
+            if (error) {
+              core.error(`Create Tag error ${error}`)
+              throw new Error(`Create Tag error ${error}`)
+            }
+            core.info(`Success added tags ${data} to ${SpotInstanceID}`)
+          })
+        }
         if (SpotInstanceRequestId !== undefined) {
           return SpotInstanceRequestId
         }
@@ -277,15 +291,10 @@ function spotRequest(params: type) {
 }
 */
 
-function getTagSpecification(
-  param: string,
-  spot: boolean
-): TagSpecificationList {
-  core.info('generate TagSpecification')
-  const tagSpecifications: TagSpecificationList = []
+function getTags(param: string): TagList {
   const tagsJSON = JSON.parse(param)
+  const tagList: TagList = []
   if (tagsJSON.length > 0) {
-    const tagList: TagList = []
     for (const t of tagsJSON) {
       const tag: Tag = {
         Key: t['Key'],
@@ -293,20 +302,28 @@ function getTagSpecification(
       }
       tagList.push(tag)
     }
-    let tagS: TagSpecification
-    if (spot) {
-      tagS = {
-        ResourceType: 'spot-instances-request',
-        Tags: tagList
-      }
-    } else {
-      tagS = {
-        ResourceType: 'instance',
-        Tags: tagList
-      }
-    }
-
-    tagSpecifications.push(tagS)
   }
+  return tagList
+}
+
+function getTagSpecification(
+  param: string,
+  spot: boolean
+): TagSpecificationList {
+  core.info('generate TagSpecification')
+  const tagSpecifications: TagSpecificationList = []
+  let tagS: TagSpecification
+  if (spot) {
+    tagS = {
+      ResourceType: 'spot-instances-request',
+      Tags: getTags(param)
+    }
+  } else {
+    tagS = {
+      ResourceType: 'instance',
+      Tags: []
+    }
+  }
+  tagSpecifications.push(tagS)
   return tagSpecifications
 }
