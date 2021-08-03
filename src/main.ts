@@ -32,15 +32,22 @@ async function startRunner(token: string, params: IEC2Params): Promise<string> {
 async function stopRunner(
   token: string,
   label: string,
-  ec2InstanceId: string
+  requestID: string,
+  spot: boolean
 ): Promise<void> {
   core.info('Mode Stop: stop runner')
+
   const params: IEC2Params = {
-    instanceId: ec2InstanceId
+    instanceId: requestID
   }
   const aws = new awsClient(params)
-  await aws.terminateEc2Instance()
-
+  if (spot) {
+    core.info(`stop Spot Request ${requestID}`)
+    await aws.terminateSpotInstance()
+  } else {
+    core.info(`stop ec2InstanceId ${requestID}`)
+    await aws.terminateEc2Instance()
+  }
   const ghc = new gitHubClient(token, label)
   await ghc.removeRunner()
 }
@@ -98,21 +105,31 @@ async function run(): Promise<void> {
           `Not all the required inputs are provided for the 'start' mode`
         )
       }
-
-      const ec2InstanceId = await startRunner(ghToken, params)
+      const responseID = await startRunner(ghToken, params)
       core.setOutput('label', params.label)
-      core.setOutput('ec2-instance-id', ec2InstanceId)
+      if (core.getInput('runner-type') === `spot`) {
+        core.setOutput('ec2-spot-request-id', responseID)
+        core.setOutput('ec2-instance-id', 'none')
+      } else {
+        core.setOutput('ec2-instance-id', responseID)
+        core.setOutput('ec2-spot-request-id', 'none')
+      }
       return
     } else if (mode === 'stop') {
       core.info('Mode Stop:')
       const label = core.getInput('label')
-      const ec2InstanceId = core.getInput('ec2-instance-id')
+      let ec2InstanceId = core.getInput('ec2-instance-id')
+      let spot = false
+      if (ec2InstanceId === 'none') {
+        ec2InstanceId = core.getInput('c2-spot-request-id')
+        spot = true
+      }
       if (!label || !ec2InstanceId) {
         throw new Error(
           `Not all the required inputs are provided for the 'stop' mode`
         )
       }
-      await stopRunner(ghToken, label, ec2InstanceId)
+      await stopRunner(ghToken, label, ec2InstanceId, spot)
     } else {
       throw new Error('Wrong mode. Allowed values: start, stop.')
     }

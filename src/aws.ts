@@ -5,7 +5,8 @@ import {
   TagSpecificationList,
   TagSpecification,
   TagList,
-  Tag
+  Tag,
+  CancelSpotInstanceRequestsRequest
 } from 'aws-sdk/clients/ec2'
 import { AWSWorker, IEC2Params } from './interfaces'
 import { onDemandPriceDB } from './ondemand'
@@ -28,17 +29,35 @@ export class awsClient implements AWSWorker {
   async delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms))
   }
+
+  async terminateSpotInstance(): Promise<void> {
+    core.info('Terminate Spot Instance')
+    if (this.params.instanceId === undefined) {
+      core.error('AWS Spot request ID is undefined')
+      throw new Error('ec2SpotRequestId is undefined')
+    }
+    const params: CancelSpotInstanceRequestsRequest = {
+      SpotInstanceRequestIds: [this.params.instanceId]
+    }
+    try {
+      await this.ec2.cancelSpotInstanceRequests(params).promise()
+      core.info(`AWS  SpotRequest ${this.params.instanceId} is terminated`)
+      return
+    } catch (error) {
+      core.error(`AWS SpotRequest ${this.params.instanceId} termination error`)
+      throw error
+    }
+  }
+
   async terminateEc2Instance(): Promise<void> {
     core.info('Treminate EC2 Instance')
     if (this.params.instanceId === undefined) {
       core.error('AWS EC2 instance ID is undefined')
       throw new Error('ec2InstanceId is undefined')
     }
-
     const params = {
       InstanceIds: [this.params.instanceId]
     }
-
     try {
       await this.ec2.terminateInstances(params).promise()
       core.info(`AWS EC2 instance ${this.params.instanceId} is terminated`)
@@ -175,7 +194,7 @@ export class awsClient implements AWSWorker {
         exit = true
         break
       }
-      core.info(`timeout for waiting spot instance is  ${timeout}`)
+      core.info(`timeout for waiting spot instance is  ${timeout * 15} secs`)
     }
   }
 
