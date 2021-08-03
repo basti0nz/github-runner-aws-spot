@@ -109,15 +109,17 @@ export class awsClient implements AWSWorker {
         SecurityGroupIds: [this.params.securityGroupId!],
         IamInstanceProfile: { Name: this.params.iamRoleName! }
       }
-      let ec2InstanceId: string | undefined
+      let SpotInstanceRequestId: string | undefined
       this.ec2.requestSpotInstances(request, function (error, data) {
         if (error) {
           core.error('AWS Spot EC2 instance starting error')
           throw error
         }
-        ec2InstanceId = data.SpotInstanceRequests![0].InstanceId
+        SpotInstanceRequestId = data.SpotInstanceRequests![0]
+          .SpotInstanceRequestId
       })
-      if (ec2InstanceId !== undefined) return ec2InstanceId
+
+      if (SpotInstanceRequestId !== undefined) return SpotInstanceRequestId
       return ''
     } catch (error) {
       core.error('AWS Spot EC2 instance starting error')
