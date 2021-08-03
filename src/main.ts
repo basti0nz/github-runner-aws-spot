@@ -118,18 +118,18 @@ async function run(): Promise<void> {
     } else if (mode === 'stop') {
       core.info('Mode Stop:')
       const label = core.getInput('label')
-      let ec2InstanceId = core.getInput('ec2-instance-id')
+      let requestId = core.getInput('ec2-instance-id')
       let spot = false
-      if (ec2InstanceId === 'none') {
-        ec2InstanceId = core.getInput('c2-spot-request-id')
+      if (requestId === 'none') {
+        requestId = core.getInput('c2-spot-request-id')
         spot = true
       }
-      if (!label || !ec2InstanceId) {
+      if (!label || !requestId) {
         throw new Error(
           `Not all the required inputs are provided for the 'stop' mode`
         )
       }
-      await stopRunner(ghToken, label, ec2InstanceId, spot)
+      await stopRunner(ghToken, label, requestId, spot)
     } else {
       throw new Error('Wrong mode. Allowed values: start, stop.')
     }
