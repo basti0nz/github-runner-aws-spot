@@ -124,29 +124,12 @@ export class awsClient implements AWSWorker {
       }
       const spotReq = await this.requestSpot(request)
       if (spotReq !== undefined) {
-        const SpotInstanceId = await this.waitForSpotInstanceRunning(spotReq)
-        if (SpotInstanceId !== undefined) {
-          core.info(`spot instance  ${SpotInstanceId} is running`)
-          //TODO create tags for instance
-          const params = {
-            Resources: [SpotInstanceId],
-            Tags: getTags(this.params.tags!)
-          }
-          this.ec2.createTags(params, function (error, data) {
-            if (error) {
-              core.error(`Create Tag error ${error}`)
-              throw new Error(`Create Tag error ${error}`)
-            }
-            core.info(`Success added tags ${data} to ${SpotInstanceId}`)
-          })
-
-          const spotReqID =
-            spotReq.SpotInstanceRequests![0].SpotInstanceRequestId !== undefined
-              ? spotReq.SpotInstanceRequests![0].SpotInstanceRequestId
-              : ''
-          core.info(`SpotReqID is  ${spotReqID}`)
-          return spotReqID
-        }
+        const spotReqID =
+          spotReq.SpotInstanceRequests![0].SpotInstanceRequestId !== undefined
+            ? spotReq.SpotInstanceRequests![0].SpotInstanceRequestId
+            : ''
+        core.info(`SpotReqID is  ${spotReqID}`)
+        return spotReqID
       }
       core.error('AWS EC2 spot instance request is undefined')
       throw new Error('ec2SpotInstanceRequest is undefined')
@@ -172,7 +155,7 @@ export class awsClient implements AWSWorker {
 
   async waitForSpotInstanceRunning(
     spotResult: AWS.EC2.RequestSpotInstancesResult
-  ): Promise<string | undefined> {
+  ): Promise<void> {
     core.info('waiting for spot instance running')
     if (spotResult === undefined) {
       core.error('AWS EC2 spot instance request is undefined')
@@ -190,27 +173,22 @@ export class awsClient implements AWSWorker {
     let exit = false
     let timeout = 10
     while (!exit) {
-      return new Promise(async (resolve, reject) => {
-        this.ec2.describeSpotInstanceRequests(params, function (error, data) {
-          if (error) {
-            reject(error)
-            core.error(`AWS Spot EC2 instance starting error: ${error}`)
-            throw new Error('ec2SpotInstanceRequest ${error}')
-          }
-          if (data.SpotInstanceRequests![0].State === `active`) {
-            resolve(data.SpotInstanceRequests![0].InstanceId)
-            exit = true
-            return
-          }
-        })
-        await this.delay(15 * 1000)
-        timeout = timeout - 1
-        if (timeout < 0) {
-          exit = true
-          reject(new Error('TimeOut for waitSpotInstanceRunning '))
+      this.ec2.describeSpotInstanceRequests(params, function (error, data) {
+        if (error) {
+          core.error(`AWS Spot EC2 instance starting error: ${error}`)
+          throw new Error('ec2SpotInstanceRequest ${error}')
         }
-        core.info(`timeout for waiting spot instance is  ${timeout * 15} secs`)
+        if (data.SpotInstanceRequests![0].State === `active`) {
+          exit = true
+          return
+        }
       })
+      await this.delay(15 * 1000)
+      timeout = timeout - 1
+      if (timeout < 0) {
+        exit = true
+      }
+      core.info(`timeout for waiting spot instance after ${timeout * 15} secs`)
     }
   }
 
