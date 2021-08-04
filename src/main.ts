@@ -92,7 +92,7 @@ async function prepeareStop(): Promise<void> {
       `Not all the required inputs are provided for the 'stop' mode`
     )
   }
-  await stopRunner(ghToken, label, requestId, spot)
+  await stopRunner(ghToken, label, ec2InstanceId, spot)
 }
 
 run()
