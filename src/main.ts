@@ -108,11 +108,12 @@ async function run(): Promise<void> {
       const responseID = await startRunner(ghToken, params)
       core.setOutput('label', params.label)
       if (core.getInput('runner-type') === `spot`) {
-        core.setOutput('ec2-spot-request-id', responseID)
         core.setOutput('ec2-instance-id', 'none')
+        core.setOutput('runner-type', 'spot')
       } else {
         core.setOutput('ec2-instance-id', responseID)
         core.setOutput('ec2-spot-request-id', 'none')
+        core.setOutput('runner-type', 'ondemand')
       }
       return
     } else if (mode === 'stop') {

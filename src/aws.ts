@@ -129,6 +129,7 @@ export class awsClient implements AWSWorker {
             ? spotReq.SpotInstanceRequests![0].SpotInstanceRequestId
             : ''
         core.info(`SpotReqID is  ${spotReqID}`)
+        core.setOutput('ec2-spot-request-id', spotReqID)
         return spotReqID
       }
       core.error('AWS EC2 spot instance request is undefined')

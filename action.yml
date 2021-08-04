@@ -94,6 +94,12 @@ outputs:
       EC2 Spot Request Id of the created runner.
       The id is used to terminate the EC2 Spot Request when the runner is not needed anymore.
       This input is required if you use the 'stop' mode.
+  runner-type:
+    description: >-
+      Specify here which do you want to use spot instance:
+      - 'spot' - to start a new runner on spot instance;
+      - 'ondemand' - to start a new runner on demand instance .
+
 runs:
   using: "node12"
   main: "dist/index.js"
