@@ -77,9 +77,9 @@ async function prepeareStop(): Promise<void> {
   const runnerType = core.getInput('runner-type')
   const ghToken: string = core.getInput('github-token')
   let requestId: string
-  let spot = false
+  const spot = false
   if (spotRequestId !== 'none') {
-    spot = true
+    //spot = true
     requestId = spotRequestId
   } else {
     requestId = ec2InstanceId
