@@ -1,6 +1,6 @@
 {
   "name": "gh_awsspot_runner",
-  "version": "0.5.0",
+  "version": "2.32",
   "private": true,
   "description": "The github action to start github runner on aws ec2 spot instance  ",
   "main": "lib/main.js",

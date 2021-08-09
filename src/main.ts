@@ -3,25 +3,29 @@ import { IEC2Params } from './interfaces'
 import { startRunner, stopRunner, genLabel } from './cmd'
 
 async function run(): Promise<void> {
-  const mode = core.getInput('mode')
-  if (!mode) {
-    throw new Error(`The 'mode' input is not specified`)
-  }
+  try {
+    const mode = core.getInput('mode')
+    if (!mode) {
+      throw new Error(`The 'mode' input is not specified`)
+    }
 
-  const ghToken: string = core.getInput('github-token')
-  if (!ghToken) {
-    throw new Error(`The 'github-token' input is not specified`)
-  }
-  //core.debug(`debug ...`) // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
-  switch (mode) {
-    case `start`:
-      prepareStart()
-      break
-    case `stop`:
-      prepeareStop()
-      break
-    default:
-      throw new Error('Wrong mode. Allowed values: start, stop.')
+    const ghToken: string = core.getInput('github-token')
+    if (!ghToken) {
+      throw new Error(`The 'github-token' input is not specified`)
+    }
+    //core.debug(`debug ...`) // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
+    switch (mode) {
+      case `start`:
+        await prepareStart()
+        break
+      case `stop`:
+        await prepeareStop()
+        break
+      default:
+        throw new Error('Wrong mode. Allowed values: start, stop.')
+    }
+  } catch (error) {
+    core.setFailed(error.message)
   }
 }
 
@@ -77,9 +81,9 @@ async function prepeareStop(): Promise<void> {
   const runnerType = core.getInput('runner-type')
   const ghToken: string = core.getInput('github-token')
   let requestId: string
-  const spot = false
+  let spot = false
   if (spotRequestId !== 'none') {
-    //spot = true
+    spot = true
     requestId = spotRequestId
   } else {
     requestId = ec2InstanceId

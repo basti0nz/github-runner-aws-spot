@@ -46,25 +46,6 @@ export class awsSpotClient implements AWSSpotWorker {
     }
   }
 
-  async terminateEc2Instance(): Promise<void> {
-    core.info('Treminate EC2 Instance')
-    if (this.params.instanceId === undefined) {
-      core.error('AWS EC2 instance ID is undefined')
-      throw new Error('ec2InstanceId is undefined')
-    }
-    const params = {
-      InstanceIds: [this.params.instanceId]
-    }
-    try {
-      await this.ec2.terminateInstances(params).promise()
-      core.info(`AWS EC2 instance ${this.params.instanceId} is terminated`)
-      return
-    } catch (error) {
-      core.error(`AWS EC2 instance ${this.params.instanceId} termination error`)
-      throw error
-    }
-  }
-
   async getOnDemandPrice(): Promise<string> {
     if (this.params.ec2InstanceType !== undefined) {
       const instancedb = onDemandPriceDB.get(this.params.ec2InstanceType)
