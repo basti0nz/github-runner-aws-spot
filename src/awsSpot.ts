@@ -33,17 +33,52 @@ export class awsSpotClient implements AWSSpotWorker {
       core.error('AWS Spot request ID is undefined')
       throw new Error('ec2SpotRequestId is undefined')
     }
-    const params: CancelSpotInstanceRequestsRequest = {
+
+    const data = await this.describeSpot(this.params.instanceId)
+    let instanceId = ''
+    if (data !== undefined) {
+      instanceId = data
+    }
+
+    const paramsCancelSpotInstance: CancelSpotInstanceRequestsRequest = {
       SpotInstanceRequestIds: [this.params.instanceId]
     }
     try {
-      await this.ec2.cancelSpotInstanceRequests(params).promise()
+      await this.ec2
+        .cancelSpotInstanceRequests(paramsCancelSpotInstance)
+        .promise()
       core.info(`AWS  SpotRequest ${this.params.instanceId} is terminated`)
-      return
     } catch (error) {
       core.error(`AWS SpotRequest ${this.params.instanceId} termination error`)
       throw error
     }
+    await delay(15 * 1000)
+    const paramsTerminate = {
+      InstanceIds: [instanceId]
+    }
+    try {
+      await this.ec2.terminateInstances(paramsTerminate).promise()
+      core.info(`AWS EC2 instance ${instanceId} is terminated`)
+      return
+    } catch (error) {
+      core.error(`AWS EC2 instance ${instanceId} termination error`)
+      throw error
+    }
+  }
+
+  async describeSpot(spotReqId: string): Promise<string | undefined> {
+    return new Promise((resolve, reject) => {
+      const params = {
+        SpotInstanceRequestIds: [spotReqId]
+      }
+      this.ec2.describeSpotInstanceRequests(params, function (error, data) {
+        if (error) {
+          core.error(`AWS Describe Spot EC2 instance error: ${error}`)
+          reject(error)
+        }
+        resolve(data.SpotInstanceRequests![0].InstanceId)
+      })
+    })
   }
 
   async getOnDemandPrice(): Promise<string> {
