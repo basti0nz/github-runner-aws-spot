@@ -46,15 +46,15 @@ export async function stopRunner(
     instanceId: requestID
   }
 
+  let aws: awsSpotClient | awsClient
   if (spot) {
     core.info(`stop Spot Request ${requestID}`)
-    const aws = new awsSpotClient(params)
-    await aws.terminateSpotInstance()
+    aws = new awsSpotClient(params)
   } else {
-    const aws = new awsClient(params)
     core.info(`stop ec2InstanceId ${requestID}`)
-    await aws.terminateEc2Instance()
+    aws = new awsClient(params)
   }
+  await aws.terminateInstance()
   const ghc = new gitHubClient(token, label)
   await ghc.removeRunner()
 }

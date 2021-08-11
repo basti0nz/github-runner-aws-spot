@@ -24,7 +24,7 @@ export class awsClient implements AWSWorker {
     this.ghToken = token
   }
 
-  async terminateEc2Instance(): Promise<void> {
+  async terminateInstance(): Promise<void> {
     core.info('Treminate EC2 Instance')
     if (this.params.instanceId === undefined) {
       core.error('AWS EC2 instance ID is undefined')

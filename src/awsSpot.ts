@@ -27,7 +27,7 @@ export class awsSpotClient implements AWSSpotWorker {
     this.ghToken = token
   }
 
-  async terminateSpotInstance(): Promise<void> {
+  async terminateInstance(): Promise<void> {
     core.info('Terminate Spot Instance')
     if (this.params.instanceId === undefined) {
       core.error('AWS Spot request ID is undefined')
@@ -143,6 +143,20 @@ export class awsSpotClient implements AWSSpotWorker {
             : ''
         core.info(`SpotReqID is  ${spotReqID}`)
         core.setOutput('ec2-spot-request-id', spotReqID)
+        const data = await this.describeSpot(spotReqID)
+        if (data !== undefined) {
+          const instanceId = data
+          const params = {
+            Resources: [instanceId],
+            Tags: getTags(this.params.tags!)
+          }
+          this.ec2.createTags(params, function (err, dataTags) {
+            if (err)
+              core.error(`AWS EC2 instance error add tags ${err} ${err.stack}`)
+            else core.info(`AWS EC2 instance has tags  ${dataTags}`)
+          })
+          this.ec2.createTags()
+        }
         return spotReqID
       }
       core.error('AWS EC2 spot instance request is undefined')

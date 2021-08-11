@@ -89,7 +89,7 @@ async function prepeareStop(): Promise<void> {
     spot = false
     requestId = ec2InstanceId
   }
-  core.info(
+  core.debug(
     `Label: ${label}  RequestID: ${requestId} ec2InstanceId: ${ec2InstanceId} spotRequestId: ${spotRequestId}  runnerType: ${runnerType} ${spot} `
   )
   if (!label || !ec2InstanceId) {
