@@ -67,7 +67,7 @@ export class awsSpotClient implements AWSSpotWorker {
   }
 
   async describeSpot(spotReqId: string): Promise<string | undefined> {
-    return new Promise((resolve, reject) => {
+    return await new Promise((resolve, reject) => {
       const params = {
         SpotInstanceRequestIds: [spotReqId]
       }
