@@ -1,8 +1,8 @@
 import { IEC2Params } from './interfaces'
-import * as core from '@actions/core'
 import { gitHubClient } from './github'
 import { awsClient } from './aws'
-import { awsSpotClient } from './awsSpot'
+import { awsSpotClient } from './aws_spot'
+import * as core from '@actions/core'
 
 export function genLabel(): string {
   return Math.random().toString(36).substr(2, 5)

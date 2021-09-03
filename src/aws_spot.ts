@@ -1,6 +1,4 @@
 import AWS from 'aws-sdk'
-import * as core from '@actions/core'
-import * as github from '@actions/github'
 import {
   TagSpecificationList,
   TagSpecification,
@@ -11,6 +9,8 @@ import {
 import { AWSSpotWorker, IEC2Params } from './interfaces'
 import { onDemandPriceDB } from './ondemand'
 import { delay } from './cmd'
+import * as core from '@actions/core'
+import * as github from '@actions/github'
 
 export class awsSpotClient implements AWSSpotWorker {
   ec2: AWS.EC2
