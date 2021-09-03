@@ -144,6 +144,7 @@ export class awsSpotClient implements AWSSpotWorker {
         core.info(`SpotReqID is  ${spotReqID}`)
         core.setOutput('ec2-spot-request-id', spotReqID)
         //TODO: add sleep 15 secs to start ec2
+        await delay(15 * 1000)
         const data = await this.describeSpot(spotReqID)
         core.info(`DescribeSpot: AWS EC2 instance is  ${data}`)
         if (data !== undefined) {
