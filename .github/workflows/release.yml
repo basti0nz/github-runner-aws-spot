@@ -42,4 +42,5 @@ jobs:
           prerelease: true
           title: "Release Build"
           files: |
-            *
+            dist/*
+
