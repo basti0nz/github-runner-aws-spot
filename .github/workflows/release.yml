@@ -41,4 +41,5 @@ jobs:
           automatic_release_tag: "master"
           prerelease: true
           title: "Release Build"
-          files: *
+          files: |
+            *
