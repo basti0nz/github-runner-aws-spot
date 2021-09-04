@@ -39,8 +39,8 @@ jobs:
         with:
           repo_token: "${{ secrets.TOKEN }}"
           automatic_release_tag: "master"
-          prerelease: true
+          prerelease: false
           title: "Release Build"
           files: |
-            dist/*
+            *
 
