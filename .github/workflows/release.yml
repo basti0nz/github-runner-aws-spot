@@ -42,5 +42,6 @@ jobs:
           prerelease: false
           title: "Release Build"
           files: |
-            *
+            dist/*
+            action.yml
 
